@@ -8,5 +8,5 @@ Create a new directory with a descriptive name of your example and fill it with 
 ```
 mkdir example
 touch example.c
-touch Makefile.c
+touch Makefile
 ```

@@ -10,7 +10,7 @@
 #define DEVICE_NAME "keylogger"
 #define CLASS_NAME  "keylogger"
 
-MODULE_AUTHOR("Nick Bulischeck and PSF");
+MODULE_AUTHOR("Nick Bulischeck and Pedro Freitas");
 MODULE_DESCRIPTION("Keylogger LKM");
 MODULE_LICENSE("GPL");
 

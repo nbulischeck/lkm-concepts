@@ -10,6 +10,8 @@
 #define DEVICE_NAME "keylogger"
 #define CLASS_NAME  "keylogger"
 
+MODULE_AUTHOR("Nick Bulischeck and PSF");
+MODULE_DESCRIPTION("Keylogger LKM");
 MODULE_LICENSE("GPL");
 
 typedef struct keypress {

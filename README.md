@@ -5,6 +5,8 @@ Single-file LKM concepts
 
 * Base - Simple, but full example on a generic LKM implementation. No real functionality, but an excellent starting point.
 * Keylogger - LKM Keylogger that uses a character device to retrieve the data logged.
+* List-Dir - List userland directories from within the Kernel using Linux Dirent structures.
+* Packet Stealing - LKM that forces a DoS on TCP packets by stealing them at the Netfilter prerouting hook.
 
 ## Contributing
 

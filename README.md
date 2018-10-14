@@ -7,6 +7,7 @@ Single-file LKM concepts
 * Keylogger - LKM Keylogger that uses a character device to retrieve the data logged.
 * List-Dir - List userland directories from within the Kernel using Linux Dirent structures.
 * Packet Stealing - LKM that forces a DoS on TCP packets by stealing them at the Netfilter prerouting hook.
+* Get-Arch - LKM to retrieve the CPU's architecture based on whether x86_64 Long-Mode is present or not.
 
 ## Contributing
 

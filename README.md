@@ -8,6 +8,7 @@ Single-file LKM concepts
 * List-Dir - List userland directories from within the Kernel using Linux Dirent structures.
 * Packet Stealing - LKM that forces a DoS on TCP packets by stealing them at the Netfilter prerouting hook.
 * Get-Arch - LKM to retrieve the CPU's architecture based on whether x86_64 Long-Mode is present or not.
+* Kernel Lists - Demonstration of how to use Linux's linked list API to update an old list when compared with a new one.
 
 ## Contributing
 

